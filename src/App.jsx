@@ -2,33 +2,50 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
 const MODES = {
-  work:       { label: '专注工作', minutes: 25, color: '#f38ba8' },
-  shortBreak: { label: '短暂休息', minutes: 5,  color: '#a6e3a1' },
-  longBreak:  { label: '长时休息', minutes: 15, color: '#89b4fa' },
+  work:       { label: '专注工作', color: '#f38ba8' },
+  shortBreak: { label: '短暂休息', color: '#a6e3a1' },
+  longBreak:  { label: '长时休息', color: '#89b4fa' },
 }
 
+const DEFAULT_MINUTES = { work: 25, shortBreak: 5, longBreak: 15 }
 const POMODOROS_BEFORE_LONG = 4
 const RADIUS = 90
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
 function pad(n) { return String(n).padStart(2, '0') }
 
+function loadMinutes() {
+  try {
+    const saved = localStorage.getItem('pomodoroMinutes')
+    if (saved) return { ...DEFAULT_MINUTES, ...JSON.parse(saved) }
+  } catch {}
+  return { ...DEFAULT_MINUTES }
+}
+
+function clampMinutes(v) { return Math.min(99, Math.max(1, parseInt(v) || 1)) }
+
 export default function App() {
   const [mode, setMode]               = useState('work')
-  const [remaining, setRemaining]     = useState(MODES.work.minutes * 60)
+  const [customMinutes, setCustomMinutes] = useState(loadMinutes)
+  const [remaining, setRemaining]     = useState(() => loadMinutes().work * 60)
   const [running, setRunning]         = useState(false)
   const [pomodoroCount, setPomodoroCount] = useState(0)
-  const intervalRef = useRef(null)
-  const audioCtxRef = useRef(null)
+  const [showSettings, setShowSettings]   = useState(false)
+  const [draft, setDraft]             = useState(DEFAULT_MINUTES)
+  const intervalRef    = useRef(null)
+  const audioCtxRef    = useRef(null)
+  const customMinRef   = useRef(customMinutes)
 
-  const { minutes, color, label } = MODES[mode]
+  useEffect(() => { customMinRef.current = customMinutes }, [customMinutes])
+
+  const { color, label } = MODES[mode]
+  const minutes    = customMinutes[mode]
   const total      = minutes * 60
   const fraction   = remaining / total
   const dashOffset = CIRCUMFERENCE * (1 - fraction)
   const mins       = Math.floor(remaining / 60)
   const secs       = remaining % 60
 
-  // Must be called during a user gesture to keep AudioContext active
   const ensureAudioCtx = useCallback(() => {
     if (!audioCtxRef.current)
       audioCtxRef.current = new (window.AudioContext || window.webkitAudioContext)()
@@ -65,19 +82,20 @@ export default function App() {
   const handleComplete = useCallback(() => {
     setRunning(false)
     playSound()
+    const mins = customMinRef.current
     if (mode === 'work') {
       setPomodoroCount(prev => {
         const next     = prev + 1
         const nextMode = next % POMODOROS_BEFORE_LONG === 0 ? 'longBreak' : 'shortBreak'
         notify('专注结束！', `第 ${next} 个番茄完成 🍅`)
         setMode(nextMode)
-        setRemaining(MODES[nextMode].minutes * 60)
+        setRemaining(mins[nextMode] * 60)
         return next
       })
     } else {
       notify('休息结束！', '准备好了吗？开始下一个番茄钟 💪')
       setMode('work')
-      setRemaining(MODES.work.minutes * 60)
+      setRemaining(mins.work * 60)
     }
   }, [mode, playSound, notify])
 
@@ -92,7 +110,6 @@ export default function App() {
     return () => clearInterval(intervalRef.current)
   }, [running, handleComplete])
 
-  // Update page title
   useEffect(() => {
     document.title = `${pad(mins)}:${pad(secs)} — ${label}`
   }, [mins, secs, label])
@@ -107,14 +124,58 @@ export default function App() {
   const handleReset = () => { setRunning(false); setRemaining(total) }
 
   const handleModeChange = m => {
-    setRunning(false); setMode(m); setRemaining(MODES[m].minutes * 60)
+    setRunning(false); setMode(m); setRemaining(customMinutes[m] * 60)
+  }
+
+  const handleOpenSettings = () => {
+    setDraft({ ...customMinutes })
+    setShowSettings(s => !s)
+  }
+
+  const handleApplySettings = () => {
+    const next = {
+      work:       clampMinutes(draft.work),
+      shortBreak: clampMinutes(draft.shortBreak),
+      longBreak:  clampMinutes(draft.longBreak),
+    }
+    setCustomMinutes(next)
+    localStorage.setItem('pomodoroMinutes', JSON.stringify(next))
+    if (!running) setRemaining(next[mode] * 60)
+    setShowSettings(false)
   }
 
   const cyclePos = pomodoroCount % POMODOROS_BEFORE_LONG
 
   return (
     <div className="app">
-      <h1 className="app-title">🍅 番茄钟</h1>
+      <div className="app-header">
+        <h1 className="app-title">🍅 番茄钟</h1>
+        <button
+          className={`btn-gear${showSettings ? ' active' : ''}`}
+          onClick={handleOpenSettings}
+          title="自定义时长"
+        >⚙</button>
+      </div>
+
+      {showSettings && (
+        <div className="settings-panel">
+          {Object.entries(MODES).map(([key, { label, color }]) => (
+            <div key={key} className="settings-row">
+              <span className="settings-label" style={{ color }}>{label}</span>
+              <input
+                className="settings-input"
+                type="number"
+                min="1"
+                max="99"
+                value={draft[key]}
+                onChange={e => setDraft(p => ({ ...p, [key]: e.target.value }))}
+              />
+              <span className="settings-unit">分钟</span>
+            </div>
+          ))}
+          <button className="btn btn-apply" onClick={handleApplySettings}>确定</button>
+        </div>
+      )}
 
       <div className="mode-tabs">
         {Object.entries(MODES).map(([key, info]) => (
@@ -131,9 +192,7 @@ export default function App() {
 
       <div className="timer-wrap">
         <svg width="240" height="240" viewBox="0 0 240 240">
-          {/* Track */}
           <circle cx="120" cy="120" r={RADIUS} fill="none" stroke="#2a2a3e" strokeWidth="16" />
-          {/* Progress */}
           <circle
             cx="120" cy="120" r={RADIUS}
             fill="none"
@@ -145,11 +204,9 @@ export default function App() {
             transform="rotate(-90 120 120)"
             style={{ transition: running ? 'stroke-dashoffset 0.9s linear' : 'none', filter: `drop-shadow(0 0 8px ${color}88)` }}
           />
-          {/* Time */}
           <text x="120" y="112" textAnchor="middle" className="svg-time" fill="#e0e0f0">
             {pad(mins)}:{pad(secs)}
           </text>
-          {/* Mode */}
           <text x="120" y="144" textAnchor="middle" className="svg-mode" fill={color}>
             {label}
           </text>
