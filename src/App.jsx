@@ -2,9 +2,9 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
 const MODES = {
-  work:       { label: '专注工作', color: '#f38ba8' },
-  shortBreak: { label: '短暂休息', color: '#a6e3a1' },
-  longBreak:  { label: '长时休息', color: '#89b4fa' },
+  work:       { label: '专注工作', color: '#c0566a' },
+  shortBreak: { label: '短暂休息', color: '#4a8a68' },
+  longBreak:  { label: '长时休息', color: '#4a6a9c' },
 }
 
 const DEFAULT_MINUTES = { work: 25, shortBreak: 5, longBreak: 15 }
@@ -25,16 +25,16 @@ function loadMinutes() {
 function clampMinutes(v) { return Math.min(99, Math.max(1, parseInt(v) || 1)) }
 
 export default function App() {
-  const [mode, setMode]               = useState('work')
+  const [mode, setMode]                   = useState('work')
   const [customMinutes, setCustomMinutes] = useState(loadMinutes)
-  const [remaining, setRemaining]     = useState(() => loadMinutes().work * 60)
-  const [running, setRunning]         = useState(false)
+  const [remaining, setRemaining]         = useState(() => loadMinutes().work * 60)
+  const [running, setRunning]             = useState(false)
   const [pomodoroCount, setPomodoroCount] = useState(0)
   const [showSettings, setShowSettings]   = useState(false)
-  const [draft, setDraft]             = useState(DEFAULT_MINUTES)
-  const intervalRef    = useRef(null)
-  const audioCtxRef    = useRef(null)
-  const customMinRef   = useRef(customMinutes)
+  const [draft, setDraft]                 = useState(DEFAULT_MINUTES)
+  const intervalRef  = useRef(null)
+  const audioCtxRef  = useRef(null)
+  const customMinRef = useRef(customMinutes)
 
   useEffect(() => { customMinRef.current = customMinutes }, [customMinutes])
 
@@ -82,20 +82,20 @@ export default function App() {
   const handleComplete = useCallback(() => {
     setRunning(false)
     playSound()
-    const mins = customMinRef.current
+    const m = customMinRef.current
     if (mode === 'work') {
       setPomodoroCount(prev => {
         const next     = prev + 1
         const nextMode = next % POMODOROS_BEFORE_LONG === 0 ? 'longBreak' : 'shortBreak'
         notify('专注结束！', `第 ${next} 个番茄完成 🍅`)
         setMode(nextMode)
-        setRemaining(mins[nextMode] * 60)
+        setRemaining(m[nextMode] * 60)
         return next
       })
     } else {
       notify('休息结束！', '准备好了吗？开始下一个番茄钟 💪')
       setMode('work')
-      setRemaining(mins.work * 60)
+      setRemaining(m.work * 60)
     }
   }, [mode, playSound, notify])
 
@@ -182,7 +182,7 @@ export default function App() {
           <button
             key={key}
             className={`mode-tab${mode === key ? ' active' : ''}`}
-            style={mode === key ? { color: info.color, borderColor: info.color } : {}}
+            style={mode === key ? { color: info.color, borderBottomColor: info.color } : {}}
             onClick={() => handleModeChange(key)}
           >
             {info.label}
@@ -191,23 +191,45 @@ export default function App() {
       </div>
 
       <div className="timer-wrap">
-        <svg width="240" height="240" viewBox="0 0 240 240">
-          <circle cx="120" cy="120" r={RADIUS} fill="none" stroke="#2a2a3e" strokeWidth="16" />
+        <svg width="250" height="250" viewBox="0 0 250 250">
+          {/* Dial tick marks */}
+          {Array.from({ length: 60 }, (_, i) => {
+            const angle = (i / 60) * 360 - 90
+            const rad   = angle * Math.PI / 180
+            const major = i % 5 === 0
+            const r1    = major ? 104 : 107
+            const r2    = major ? 111 : 109
+            return (
+              <line
+                key={i}
+                x1={125 + r1 * Math.cos(rad)} y1={125 + r1 * Math.sin(rad)}
+                x2={125 + r2 * Math.cos(rad)} y2={125 + r2 * Math.sin(rad)}
+                stroke="#cec0aa"
+                strokeWidth={major ? 1.5 : 0.8}
+                strokeLinecap="round"
+              />
+            )
+          })}
+          {/* Track */}
+          <circle cx="125" cy="125" r={RADIUS} fill="none" stroke="#e8dece" strokeWidth="8" />
+          {/* Progress */}
           <circle
-            cx="120" cy="120" r={RADIUS}
+            cx="125" cy="125" r={RADIUS}
             fill="none"
             stroke={color}
-            strokeWidth="16"
+            strokeWidth="8"
             strokeDasharray={CIRCUMFERENCE}
             strokeDashoffset={dashOffset}
             strokeLinecap="round"
-            transform="rotate(-90 120 120)"
-            style={{ transition: running ? 'stroke-dashoffset 0.9s linear' : 'none', filter: `drop-shadow(0 0 8px ${color}88)` }}
+            transform="rotate(-90 125 125)"
+            style={{ transition: running ? 'stroke-dashoffset 0.9s linear' : 'none' }}
           />
-          <text x="120" y="112" textAnchor="middle" className="svg-time" fill="#e0e0f0">
+          {/* Time */}
+          <text x="125" y="116" textAnchor="middle" dominantBaseline="central" className="svg-time" fill="#2a1f10">
             {pad(mins)}:{pad(secs)}
           </text>
-          <text x="120" y="144" textAnchor="middle" className="svg-mode" fill={color}>
+          {/* Mode label */}
+          <text x="125" y="148" textAnchor="middle" dominantBaseline="central" className="svg-mode" fill={color}>
             {label}
           </text>
         </svg>
@@ -216,7 +238,7 @@ export default function App() {
       <div className="controls">
         <button
           className="btn btn-start"
-          style={{ background: color, boxShadow: `0 4px 20px ${color}55` }}
+          style={{ background: color, boxShadow: `0 4px 18px ${color}55` }}
           onClick={handleToggle}
         >
           {running ? '暂停' : remaining === total ? '开始' : '继续'}
@@ -233,9 +255,9 @@ export default function App() {
               key={i}
               className="dot"
               style={{
-                background: i < cyclePos ? color : 'transparent',
-                borderColor: i < cyclePos ? color : '#3a3a50',
-                boxShadow: i < cyclePos ? `0 0 6px ${color}88` : 'none',
+                background:  i < cyclePos ? color : 'transparent',
+                borderColor: i < cyclePos ? color : '#d4c8b4',
+                boxShadow:   i < cyclePos ? `0 0 5px ${color}77` : 'none',
               }}
             />
           ))}
