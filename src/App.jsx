@@ -58,7 +58,7 @@ export default function App() {
   }, [ensureAudioCtx])
 
   const notify = useCallback((title, body) => {
-    if (Notification.permission === 'granted')
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted')
       new Notification(title, { body, icon: '🍅' })
   }, [])
 
@@ -98,8 +98,9 @@ export default function App() {
   }, [mins, secs, label])
 
   const handleToggle = () => {
-    if (!running && Notification.permission === 'default') Notification.requestPermission()
-    ensureAudioCtx() // activate AudioContext during user gesture
+    if (!running && typeof Notification !== 'undefined' && Notification.permission === 'default')
+      Notification.requestPermission()
+    ensureAudioCtx()
     setRunning(r => !r)
   }
 
