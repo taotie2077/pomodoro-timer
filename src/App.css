@@ -1,0 +1,130 @@
+.app {
+  background: #1a1a2e;
+  border-radius: 24px;
+  padding: 36px 40px 40px;
+  width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+  border: 1px solid #2a2a40;
+}
+
+/* ── Title ──────────────────────────────────────────── */
+.app-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #e0e0f0;
+  letter-spacing: 2px;
+}
+
+/* ── Mode tabs ──────────────────────────────────────── */
+.mode-tabs {
+  display: flex;
+  gap: 6px;
+  background: #12121f;
+  border-radius: 10px;
+  padding: 4px;
+}
+
+.mode-tab {
+  border: none;
+  background: transparent;
+  color: #6c6c8a;
+  font-family: inherit;
+  font-size: 13px;
+  padding: 6px 12px;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  border: 1.5px solid transparent;
+}
+
+.mode-tab:hover { background: #22223a; color: #c0c0d8; }
+.mode-tab.active { background: #22223a; font-weight: 600; }
+
+/* ── Timer ring ─────────────────────────────────────── */
+.timer-wrap { position: relative; }
+
+.svg-time {
+  font-size: 44px;
+  font-weight: 700;
+  letter-spacing: -1px;
+}
+
+.svg-mode {
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 1px;
+}
+
+/* ── Controls ───────────────────────────────────────── */
+.controls {
+  display: flex;
+  gap: 12px;
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  font-family: inherit;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.1s, opacity 0.2s;
+}
+
+.btn:active { transform: scale(0.96); }
+
+.btn-start {
+  color: #12121f;
+  padding: 12px 40px;
+  letter-spacing: 1px;
+}
+
+.btn-reset {
+  background: #2a2a40;
+  color: #8888aa;
+  padding: 12px 20px;
+}
+
+.btn-reset:hover { background: #33334e; color: #c0c0d8; }
+
+/* ── Session row ────────────────────────────────────── */
+.session-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.session-label {
+  font-size: 13px;
+  color: #6c6c8a;
+}
+
+.dots {
+  display: flex;
+  gap: 8px;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 1.5px solid #3a3a50;
+  display: inline-block;
+  transition: background 0.3s, box-shadow 0.3s;
+}
+
+.long-break-badge {
+  font-size: 13px;
+  font-weight: 500;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
